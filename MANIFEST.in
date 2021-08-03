@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include mobile_money *.css
+recursive-include mobile_money *.csv
+recursive-include mobile_money *.html
+recursive-include mobile_money *.ico
+recursive-include mobile_money *.js
+recursive-include mobile_money *.json
+recursive-include mobile_money *.md
+recursive-include mobile_money *.png
+recursive-include mobile_money *.py
+recursive-include mobile_money *.svg
+recursive-include mobile_money *.txt
+recursive-exclude mobile_money *.pyc
