@@ -3,11 +3,15 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from types import new_class
 import frappe
 from frappe.model.document import Document
 
 #std lib imports 
-import datetime
+import datetime,json
+
+#application level/local imports
+from erpnext.accounts.doctype.payment_entry.payment_entry import get_outstanding_reference_documents
 
 class ExternalPaymentEntry(Document):
 	'''
@@ -33,6 +37,10 @@ class ExternalPaymentEntry(Document):
 		elif self.status == "Submitted":
 			#prepare erpnext payment details
 			self.prepare_payment_entry_details()
+			#now get any oustanding invoices
+			self.get_any_linked_outstanding_invoices()
+			#append any outstanding invoices to payment entry
+			self.prepare_outstanding_invoices()
 			#now add the payment to a payment entry
 			self.create_payment_entry()
 				
@@ -119,6 +127,71 @@ class ExternalPaymentEntry(Document):
 			'acc_currency':acc_currency
 		}
 
+	def get_any_linked_outstanding_invoices(self):
+		'''
+		Function that uses an ERPNext inbuilt method to get any oustanding
+		invoices
+		'''
+		#check if payment in of type recieve 
+		if not self.type_of_entry == "Receive":
+			# return a empty list since we do not yet have functionality 
+			# to deal with other cases
+			#set outstanding_docs as empty 
+			self.outstanding_docs =  []
+			#stop execution of this function
+			return 
+		
+		#if type is recieve go ahead an pull the payments
+		arguments =  {
+			"posting_date": None,
+			"company": self.payment_details['company'],
+			"party_type": "Customer",
+			"payment_type": self.type_of_entry,
+			"party": self.payment_details['customer'],
+			"party_account": "Debtors - UL",
+			"cost_center": None
+		}
+		args = json.dumps(arguments)#convert dict to str
+		#get outstanding documents
+		outstanding_docs = get_outstanding_reference_documents(args)
+		#set outstandinf docs 
+		self.outstanding_docs = outstanding_docs
+
+	def prepare_outstanding_invoices(self):
+		'''
+		Methods that prepares any outstanding invoices to a payment
+		entry provided the payment amount is not exeeded
+		'''
+		#get remaining balance
+		remaining_balance = self.amount
+		invoices_to_append = []
+		if self.outstanding_docs:
+			#loop through outstanding docs
+			for doc in self.outstanding_docs:
+				if remaining_balance > 0:
+					if self.amount >= doc.outstanding_amount:
+						new_outstanding = 0
+						allocated = doc.outstanding_amount
+					else:
+						new_outstanding = doc.outstanding_amount - self.amount
+						allocated = self.amount
+					doc_inv = {
+						'reference_doctype':doc.voucher_type,
+						'reference_name':doc.voucher_no,
+						'due_date':doc.due_date,
+						'total_amount':doc.invoice_amount,
+						'outstanding_amount':new_outstanding,
+						'allocated_amount':allocated,
+					}
+					#append new invoice to list
+					invoices_to_append.append(doc_inv)
+					#reduce balance by outstanding amount
+					remaining_balance -= doc.outstanding_amount
+				else:
+					break
+		#now set invoices to append
+		self.invoices_to_append  = invoices_to_append
+					
 	def create_payment_entry(self):
 		'''
 		Method that creates a payment entry for an associated 
@@ -140,6 +213,18 @@ class ExternalPaymentEntry(Document):
 		new_payment.paid_to_account_currency = self.payment_details['acc_currency']
 		new_payment.received_amount = self.amount
 		new_payment.paid_amount = self.amount
+		#add advances invoices
+		if self.invoices_to_append:
+			# loop through each invoice
+			for invoice_to_append in self.invoices_to_append:
+				row = new_payment.append("references", {})
+				row.reference_doctype = invoice_to_append['reference_doctype']
+				row.reference_name = invoice_to_append['reference_name']
+				row.due_date = invoice_to_append['due_date']
+				row.total_amount = invoice_to_append['total_amount']
+				row.outstanding_amount = invoice_to_append['outstanding_amount']
+				row.allocated_amount = invoice_to_append['allocated_amount'] 
+
 		#validate the payment entry
 		try:
 			new_payment.validate()
@@ -147,7 +232,7 @@ class ExternalPaymentEntry(Document):
 			frappe.throw(e)
 		#now save to database()
 		new_payment.save(ignore_permissions = True)
-		# frappe.db.commit()
+		frappe.db.commit()
 		#now submite the payment entry
 		new_payment.submit()
 		frappe.db.commit()
