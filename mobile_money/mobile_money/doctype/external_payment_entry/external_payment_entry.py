@@ -224,7 +224,6 @@ class ExternalPaymentEntry(Document):
 				row.total_amount = invoice_to_append['total_amount']
 				row.outstanding_amount = invoice_to_append['outstanding_amount']
 				row.allocated_amount = invoice_to_append['allocated_amount'] 
-
 		#validate the payment entry
 		try:
 			new_payment.validate()
