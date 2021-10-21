@@ -7,7 +7,7 @@ def get_data():
 		{
 			"module_name": "Mobile Money",
 			"color": "grey",
-			"icon": "octicon octicon-file-directory",
+			"icon": "octicon octicon-device-mobile",
 			"type": "module",
 			"label": _("Mobile Money")
 		}
