@@ -169,12 +169,12 @@ class ExternalPaymentEntry(Document):
 			#loop through outstanding docs
 			for doc in self.outstanding_docs:
 				if remaining_balance > 0:
-					if self.amount >= doc.outstanding_amount:
+					if remaining_balance >= doc.outstanding_amount:
 						new_outstanding = 0
 						allocated = doc.outstanding_amount
 					else:
-						new_outstanding = doc.outstanding_amount - self.amount
-						allocated = self.amount
+						new_outstanding = doc.outstanding_amount - remaining_balance
+						allocated = remaining_balance
 					doc_inv = {
 						'reference_doctype':doc.voucher_type,
 						'reference_name':doc.voucher_no,
