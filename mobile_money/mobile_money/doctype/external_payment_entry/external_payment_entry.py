@@ -180,7 +180,7 @@ class ExternalPaymentEntry(Document):
 						'reference_name':doc.voucher_no,
 						'due_date':doc.due_date,
 						'total_amount':doc.invoice_amount,
-						'outstanding_amount':new_outstanding,
+						'outstanding_amount':doc.outstanding_amount,
 						'allocated_amount':allocated,
 					}
 					#append new invoice to list
