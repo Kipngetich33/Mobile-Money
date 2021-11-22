@@ -20,7 +20,8 @@
   "mpesa_shortcode",
   "column_break_15",
   "heading_16",
-  "transaction_type"
+  "transaction_type",
+  "production"
  ],
  "fields": [
   {
@@ -112,10 +113,16 @@
    "fieldname": "heading_16",
    "fieldtype": "Heading",
    "label": "."
+  },
+  {
+   "default": "0",
+   "fieldname": "production",
+   "fieldtype": "Check",
+   "label": "Production"
   }
  ],
  "issingle": 1,
- "modified": "2021-11-18 16:18:49.401844",
+ "modified": "2021-11-19 17:10:37.087899",
  "modified_by": "Administrator",
  "module": "Mobile Money",
  "name": "Mobile Payment Settings",
