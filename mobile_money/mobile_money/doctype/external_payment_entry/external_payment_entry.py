@@ -170,7 +170,6 @@ class ExternalPaymentEntry(Document):
 			for doc in self.outstanding_docs:
 				if remaining_balance > 0:
 					if remaining_balance >= doc.outstanding_amount:
-						new_outstanding = 0
 						allocated = doc.outstanding_amount
 					else:
 						new_outstanding = doc.outstanding_amount - remaining_balance

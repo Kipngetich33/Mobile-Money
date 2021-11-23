@@ -4,13 +4,8 @@ import requests,json
 from requests.auth  import HTTPBasicAuth
 from frappe import enqueue
 
-
-#mpesa details 
-consumer_key = config('organization_mpesa_api_key')
-consumer_secret = config('organization_mpesa_api_secret')
-base_url = config('organization_mpesa_base_url')
-organization_shortcode = config('organization_shortcode')
-transation_state = config('organization_transation_state')
+#app level imports
+from water.custom_methods.reusable_methods import get_settings
 
 @frappe.whitelist()
 def token():
@@ -25,10 +20,19 @@ def ac_token():
 	'''
 	# Function that fetched authorization token for daraja api
 	'''
-	#sandbox url
-	mpesa_auth_url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
-	# production url
-	#mpesa_auth_url = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
+	#determine whether mpesa is production or test
+	mobile_money_settings = get_settings("Mobile Payment Settings")
+	if mobile_money_settings.production:
+		#mpesa  api prod details 
+		consumer_key = config('organization_mpesa_api_key_prod')
+		consumer_secret = config('organization_mpesa_api_secret_prod')
+		mpesa_auth_url = config('mpesa_auth_url_prod')
+	else:
+		#mpesa api test details 
+		consumer_key = config('organization_mpesa_api_key_test')
+		consumer_secret = config('organization_mpesa_api_secret_test')
+		mpesa_auth_url = config('mpesa_auth_url_test')
+	#send http request
 	data = (requests.get(mpesa_auth_url,auth = HTTPBasicAuth(consumer_key,consumer_secret))).json()
 	return data['access_token']
 
@@ -39,17 +43,28 @@ def register():
 	Function that registers the validation and confirmation urls for an APP
 	in MPesa
 	'''
-	mpesa_endpoint = 'https://api.safaricom.co.ke/mpesa/c2b/v1/registerurl'
+	#determine whether mpesa is production or test
+	mobile_money_settings = get_settings("Mobile Payment Settings")
+	if mobile_money_settings.production:
+		mpesa_endpoint = config('mpesa_reg_url_prod')
+		organization_shortcode = config('organization_shortcode_prod')
+		
+	else:
+		mpesa_endpoint = config('mpesa_reg_url_test')
+		organization_shortcode = config('organization_shortcode_test')
+	
 	headers = {
 		"Authorization": "Bearer %s" % ac_token(),
 		"Content-Type": "application/json"
 	}
+	transaction_state = config('organization_transation_state')
+	base_url = config('organization_api_base_url')
 
 	req_body = {
 		"ShortCode":organization_shortcode,
-		"ResponseType":transation_state,
-		"ConfirmationURL": base_url +"/c2b/confirm",
-		"ValidationURL": base_url +"/c2b/validation"
+		"ResponseType":transaction_state,
+		"ConfirmationURL": base_url +"/mobile_money.safcom.c2b_api.confirm",
+		"ValidationURL": base_url +"/mobile_money.safcom.c2b_api.validate"
 	}
 
 	response_data = requests.post(
