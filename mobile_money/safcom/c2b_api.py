@@ -173,7 +173,7 @@ def get_request_form_data():
 	return frappe.parse_json(data)
 
 def enqueue_transaction_payment_processing(transaction):
-    enqueue('mobile_money.mpesa.c2b_api.process_payment', transaction=transaction)
+    enqueue('mobile_money.safcom.c2b_api.process_payment', transaction=transaction)
 
 def enqueue_transaction_submission(transaction_doc_name):
-    enqueue('mobile_money.mpesa.c2b_api.submit_payment', transaction_doc_name=transaction_doc_name)
+    enqueue('mobile_money.safcom.c2b_api.submit_payment', transaction_doc_name=transaction_doc_name)
