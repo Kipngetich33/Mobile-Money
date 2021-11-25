@@ -48,7 +48,6 @@ def register():
 	if mobile_money_settings.production:
 		mpesa_endpoint = config('mpesa_reg_url_prod')
 		organization_shortcode = config('organization_shortcode_prod')
-		
 	else:
 		mpesa_endpoint = config('mpesa_reg_url_test')
 		organization_shortcode = config('organization_shortcode_test')
@@ -87,6 +86,7 @@ def confirm():
 	#return process status
 	return {'status':'Success'}
 
+@frappe.whitelist(allow_guest = True)
 def validate():
 	'''
 	Function that recives a validation request from mpesa before a
