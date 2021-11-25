@@ -94,7 +94,10 @@ def validate():
 	external validation is activated
 	'''
 	#we currently have not active external validation hence just pass
-	return {'status':'Success'}
+	return {
+		'ResultCode':0,
+		'ResultDesc':"Accepted"
+	}
 
 def process_payment(transaction):
 	'''
