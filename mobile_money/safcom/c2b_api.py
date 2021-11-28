@@ -93,11 +93,12 @@ def validate():
 	transaction is completed. A request is only sent to this URL is 
 	external validation is activated
 	'''
-	#we currently have not active external validation hence just pass
-	return {
-		'ResultCode':0,
-		'ResultDesc':"Accepted"
-	}
+	#return a response to allow mpesa Accept payment
+	response = frappe._dict({
+        "ResultCode": 0,
+		"ResultDesc":"Accepted"
+        })
+	frappe.local.response = response
 
 def process_payment(transaction):
 	'''
@@ -166,7 +167,8 @@ def submit_payment(transaction_doc_name):
 
 @frappe.whitelist(allow_guest = True)
 def test_api():
-	return {'status':True}
+	message = {'status':True}
+	return frappe.parse_json(message)
 
 def get_request_form_data():
 	if frappe.local.form_dict.data is None:
