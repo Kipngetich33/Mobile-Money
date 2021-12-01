@@ -7,6 +7,13 @@ from frappe import enqueue
 #app level imports
 from water.custom_methods.reusable_methods import get_settings
 
+#define global variables
+safcom_whitelisted_ips = [
+	"192.201.214.200","196.201.214.206","196.201.213.114","196.201.214.207",
+	"196.201.214.208","196. 201.213.44","196.201.212.127","196.201.212.128",
+	"196.201.212.129","196.201.212.136","196.201.212.74","196.201.212.69"
+]
+
 @frappe.whitelist()
 def token():
 	'''
@@ -80,11 +87,21 @@ def confirm():
 	This is an endpoint that receives confirmation from 
 	Mpesa when a transation is completed successfully
 	'''
-	transaction = get_request_form_data()
-	#enque the payment data for processing and submission
-	enqueue_transaction_payment_processing(transaction)
-	#return process status
-	return {'status':'Success'}
+	request_ip = frappe.local.request_ip
+	if request_ip in safcom_whitelisted_ips:
+		transaction = get_request_form_data()
+		#enque the payment data for processing and submission
+		enqueue_transaction_payment_processing(transaction)
+		#return process status
+		return {
+			'status':True,
+			'message':"Transaction added successfully"
+		}
+	else:
+		return {
+			'status':False,"message":"An error occured"
+		}
+	
 
 @frappe.whitelist(allow_guest = True)
 def validate():
@@ -93,11 +110,18 @@ def validate():
 	transaction is completed. A request is only sent to this URL is 
 	external validation is activated
 	'''
-	#return a response to allow mpesa Accept payment
-	response = frappe._dict({
-        "ResultCode": 0,
-		"ResultDesc":"Accepted"
+	request_ip = frappe.local.request_ip
+	if request_ip in safcom_whitelisted_ips:
+		response = frappe._dict({
+			"ResultCode": 0,
+			"ResultDesc":"Accepted"
         })
+	else:
+		response = frappe._dict({
+			"ResultCode": 1,
+			"ResultDesc":"Rejected"
+        })
+	#return a response to allow mpesa Accept payment
 	frappe.local.response = response
 
 def process_payment(transaction):
@@ -167,7 +191,16 @@ def submit_payment(transaction_doc_name):
 
 @frappe.whitelist(allow_guest = True)
 def test_api():
-	message = {'status':True}
+	list_of_whitelisted_ips = [
+		"192.201.214.200","196.201.214.206","196.201.213.114","196.201.214.207",
+		"196.201.214.208","196. 201.213.44","196.201.212.127","196.201.212.128",
+		"196.201.212.129","196.201.212.136","196.201.212.74","196.201.212.69"
+	]
+	request_ip = frappe.local.request_ip
+	if request_ip in list_of_whitelisted_ips:
+		message = {'status':True}
+	else:
+		message = {'status':False}
 	return frappe.parse_json(message)
 
 def get_request_form_data():
@@ -182,3 +215,6 @@ def enqueue_transaction_payment_processing(transaction):
 
 def enqueue_transaction_submission(transaction_doc_name):
     enqueue('mobile_money.safcom.c2b_api.submit_payment', transaction_doc_name=transaction_doc_name)
+
+
+
